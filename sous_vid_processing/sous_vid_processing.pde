@@ -48,7 +48,7 @@ void draw () {
           graph.addPoint(a0,a1);
           flag = true;
         }
-        pot.setHeat((int)a2*4/180);
+        pot.setHeat((int)a2*4/270);
       } else {
         println(inString);
       }  
@@ -119,8 +119,7 @@ class Dial{
       }
       // Generate temperature corresponding to angle
       temp=(theta>PI?(theta-PI-radians(60)):theta+PI/2+radians(30))*(75)/radians(180+60)+25;
-      myPort.write("temp\t");
-      myPort.write(temp+"\n");
+      writeTemp();
     }
     pushMatrix();
     translate(x+w/2,y+h/2);
@@ -134,6 +133,12 @@ class Dial{
     fill(fg);
     text((int)temp+"°C",x+w/2,y+h+25);
     textSize(12);
+  }
+  
+  // Update arduino setpoint
+  void writeTemp(){
+     myPort.write("temp\t");
+     myPort.write(temp+"\n"); 
   }
 }
 
@@ -220,12 +225,21 @@ class Timer{
   void endTimer(){
     timeTotal=timeLeft;
     started=false;
+    // Stop arduino
+    turnOffHeat();
+  }
+  
+  // Send off signal to arduino
+  void turnOffHeat(){
+    myPort.write("off\n");
   }
   
   // Starts timer countdown
   void startTimer(){
     startTime=millis();
     started=true;
+    // Ensure arduino has a setpoint
+    dial.writeTemp();
   }
   
   // Ran every time a mouse is clicked. Used to update buttons

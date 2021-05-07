@@ -90,7 +90,7 @@ void loop() {
   if(setPoint!=0){
     updatePID();
   } else {
-    //setStepperAngle(0);
+    setStepperAngle(0);
   }
 
   // Edit starting stepper position with button (does not change saved steps)
