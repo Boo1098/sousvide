@@ -16,12 +16,12 @@ Dial dial;
 
 void setup() {
   size(1200, 612); // set the window size
-  myPort = new Serial(this, Serial.list()[1], 115200); // define input port
+  myPort = new Serial(this, Serial.list()[0], 115200); // define input port
   
 
   // Create drawn objects
   graph=new Graph(50, 50, 750, 250, background, foreground, accent);
-  pot=new Pot(1200-300,0,300,200,background,foreground, accent);
+  pot=new Pot(1200-350,50,300,200,background,foreground, accent);
   timer=new Timer(350,450,500,132,background,foreground,accent);
   dial=new Dial(900,350,200,200,background,foreground,accent);
   
@@ -49,7 +49,9 @@ void draw () {
           flag = true;
         }
         pot.setHeat((int)a2*4/180);
-      }
+      } else {
+        println(inString);
+      }  
     }
   }
    
@@ -345,6 +347,10 @@ class Graph {
     times.add(time);
     temps.add(temp);
     // Update plot
+    if(times.size()>10000){
+      times.remove(0);
+      temps.remove(0);
+    }
     
   }
 

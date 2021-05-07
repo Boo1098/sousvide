@@ -1,3 +1,5 @@
+#include <EEPROM.h>
+
 // Pin to read thermistor from
 #define THERMISTOR_PIN A0
 // Resistance of thermistor at nominal temp
@@ -27,13 +29,13 @@ int setPoint = 0;
 // PID bootstrap
 float lastError,output;
 long lastTime;
-long integral = 0;
+float integral = 0;
 
 // PID constants
-float P = 2.4;
-float I = 0;
+float P = 20;
+float I = 0.001;
 float D = 0;
-float F = 0;
+float F = .12;
 
 // Save stepper position
 int currentSteps = 0;
@@ -50,6 +52,8 @@ void setup() {
   pinMode(BLUE, OUTPUT);
   pinMode(CCW_BUTTON,INPUT_PULLUP);
   pinMode(CW_BUTTON,INPUT_PULLUP);
+
+//  currentSteps=EEPROM.read(0);
 }
 
 void loop() {
@@ -62,6 +66,10 @@ void loop() {
   Serial.print(getTemp(1));
   Serial.print('\t');
   Serial.println(output);
+  
+  Serial.print(currentSteps);
+  Serial.print('\t');
+  Serial.println(integral);
 
   // Get input data
   if(Serial.available()>0){
@@ -82,7 +90,7 @@ void loop() {
   if(setPoint!=0){
     updatePID();
   } else {
-    setStepperAngle(0);
+    //setStepperAngle(0);
   }
 
   // Edit starting stepper position with button (does not change saved steps)
@@ -94,19 +102,21 @@ void loop() {
   }
 
   // Loop must take at least 100ms
-  while(millis()-startTime<100);
+  while(millis()-startTime<10);
 }
 
 void updatePID(){
   long startTime=millis();
   float error = setPoint-getTemp(1);
-  float derivative = (error-lastError)/(lastTime-startTime);
-  integral+=error*(lastTime-startTime);
+  float derivative = (error-lastError)/(startTime-lastTime);
+  if(startTime-lastTime<1000){
+    integral+=error*(startTime-lastTime)/1000.0;
+  }
   output = P*error+I*integral+D*derivative+F*setPoint;
   if(output<0){
     output=0;
-  } else if (output>180){
-    output=180;
+  } else if (output>270){
+    output=270;
   }
   setStepperAngle(output);
   lastTime=startTime;
@@ -148,7 +158,7 @@ float getTemp(int numberOfSamples){
 //  Serial.print("Temperature ");
 //  Serial.print(average);
 //  Serial.println("C");
-  return average;
+  return average-2.0;
 }
 
 void setStepperAngle(int angle){
@@ -158,17 +168,20 @@ void setStepperAngle(int angle){
 }
 
 void setStepperSteps(int steps){
-  if(steps>currentSteps){
-    while(steps>currentSteps){
-      twoStepsCCW();
-      currentSteps+=2;
-    }
-  } else {
-    while(steps<currentSteps){
+  if(steps-1>currentSteps){
+//    while(steps-1>currentSteps){
       twoStepsCW();
+      currentSteps+=2;
+//    }
+//    EEPROM.write(0,currentSteps);
+  } else if (steps+1<currentSteps){
+//    while(steps+1<currentSteps){
+      twoStepsCCW();
       currentSteps-=2;
-    }
+//    }
+//    EEPROM.write(0,currentSteps);
   }
+  
 }
 
 // Go two steps CCW on stepper motor
