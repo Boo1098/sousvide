@@ -1,4 +1,5 @@
 import processing.serial.*; // add the serial library
+import processing.sound.*; // Add sound library
 import java.util.Arrays;
 import java.util.Collections;
 Serial myPort; // define a serial port object to monitor
@@ -7,6 +8,9 @@ Serial myPort; // define a serial port object to monitor
 color background=color(0,0,0);
 color foreground=color(255,255,255);
 color accent=color(255,0,255);
+
+// Sound file
+SoundFile done;
 
 // Displayed objects
 Graph graph;
@@ -27,6 +31,10 @@ void setup() {
   
   // Initialize timer to convienient number
   timer.setTimer(1,30,0);
+  
+  // Sound import needs to be done in setup for some reason
+  // Source: https://freesound.org/people/dland/sounds/149506/, licensed under creative commons
+  done=new SoundFile(this,"done.wav");
   
   myPort.clear(); // clear the port of any initial junk
 }
@@ -151,7 +159,6 @@ class Timer{
   long startTime;
   boolean started;
   long timeTotal, timeLeft;
-  PImage pot;
   
   // Setup pot
   Timer(int topLeftX, int topLeftY, int xSize, int ySize, color background, color foreground, color accent) {
@@ -205,6 +212,7 @@ class Timer{
       timeLeft=timeTotal-(millis()-startTime)/1000;
       if(timeLeft<=0){
         endTimer();
+        
       }
     }
   }

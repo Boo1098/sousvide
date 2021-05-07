@@ -162,7 +162,7 @@ float getTemp(int numberOfSamples){
   // 1/T = 1/T_nominal+(1/beta)*ln(R/R_nominal)
   average = 1.0/(1.0/(float)TEMPERATURE_NOMINAL+(1.0/(float)BETA)*log(average/(float)THERMISTOR_NOMINAL)); //K
   average -=273.15;// Celsius
-  return average-2.0; // Found off by ~2C consistently
+  return average-7.0; // Found off by ~2C consistently
 }
 
 // Set stepper motor based on angle
