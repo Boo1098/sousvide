@@ -1,7 +1,5 @@
 import processing.serial.*; // add the serial library
 import processing.sound.*; // Add sound library
-import java.util.Arrays;
-import java.util.Collections;
 Serial myPort; // define a serial port object to monitor
 
 // Global colors
@@ -75,9 +73,11 @@ void draw () {
   pot.drawPot();
   // Update timer
   timer.drawTimer();
+  // Update dial
   dial.drawDial();
 }
 
+// Built in that runs on mouse click
 void mousePressed(){
   timer.mouse(mouseX,mouseY);
 }
@@ -92,7 +92,7 @@ class Dial{
   float theta, temp;
   PImage outsideDial, insideDial;
   
-  // Setup pot
+  // Setup pot variables
   Dial(int topLeftX, int topLeftY, int xSize, int ySize, color background, color foreground, color accent) {
     x=topLeftX;
     y=topLeftY;
@@ -108,13 +108,17 @@ class Dial{
     drawDial();
   }
   
+  // Used to draw Dial every draw loop and check for mouse clicks
   void drawDial(){
+    // Draw outside dial
     imageMode(CENTER);
     fill(fg);
     tint(fg);
     image(outsideDial,x+w/2,y+h/2,w,h);
     stroke(fg);
     fill(bg);
+    
+    // Check if mouse updated dial angle
     if(mousePressed){
       if(mouseX>x&&mouseX<x+w&&mouseY>y&&mouseY<y+h){
         // Generate angle dial needs to point in
@@ -129,15 +133,22 @@ class Dial{
       }
       // Generate temperature corresponding to angle
       temp=(theta>PI?(theta-PI-radians(60)):theta+PI/2+radians(30))*(75)/radians(180+60)+25;
+      // Send new temperature to arduino
       writeTemp();
     }
+    
+    // Draw pointer
     pushMatrix();
     translate(x+w/2,y+h/2);
     rotate(theta);
     tint(a);
     image(insideDial,0,0,w,h);
     popMatrix();
+    
+    // Reset image mode
     imageMode(CORNER);
+    
+    // Draw temperature under dial
     textAlign(CENTER);
     textSize(25);
     fill(fg);
@@ -152,6 +163,7 @@ class Dial{
   }
 }
 
+// Object that contains all information and methods for running the on screen timer
 class Timer{
   color fg, bg, a;
   int x, y, w, h;
@@ -160,7 +172,7 @@ class Timer{
   boolean started;
   long timeTotal, timeLeft;
   
-  // Setup pot
+  // Setup pot variables
   Timer(int topLeftX, int topLeftY, int xSize, int ySize, color background, color foreground, color accent) {
     x=topLeftX;
     y=topLeftY;
@@ -209,10 +221,11 @@ class Timer{
   // Updates time left on timer
   void updateTime(){
     if(started){
-      timeLeft=timeTotal-(millis()-startTime)/1000;
+      timeLeft=timeTotal-(millis()-startTime)/1000; // Calculates seconds since starting and subtracts it from the total time to get the seconds left
+      // If timer is done, end it
       if(timeLeft<=0){
+        done.play(); // Play ding sound
         endTimer();
-        
       }
     }
   }
@@ -220,7 +233,7 @@ class Timer{
   // Overwrite timer
   void setTimer(int hour, int minute, int second){
     timeTotal=hour*60*60+minute*60+second;
-    timeLeft=timeTotal;
+    timeLeft=timeTotal; //  Reset Time Left
     drawTimer();
   }
   
@@ -254,14 +267,14 @@ class Timer{
   
   // Ran every time a mouse is clicked. Used to update buttons
   void mouse(int mx, int my){
-    // Check if timer itself is pressed
+    // Check if timer itself is pressed and starts/stops is
     if(mx>x && mx<x+w && my>y+20 && my<y+h-20){
       if(!started)
       startTimer();
       else
       endTimer();
     }
-    // Check if +/- buttons pressed
+    // Check if +/- buttons pressed and does corresponding action
     // Hours
     if(mx>x+w/6-w/12&&mx<x+w/6+w/12){
       // + Hour
@@ -302,7 +315,7 @@ class Pot {
   int heat;
   PImage pot;
   
-  // Setup pot
+  // Setup pot variables
   Pot(int topLeftX, int topLeftY, int xSize, int ySize, color background, color foreground, color accent) {
     x=topLeftX;
     y=topLeftY;
@@ -316,6 +329,7 @@ class Pot {
     drawPot();
   }
   
+  // Draws pot every tick and updates it's heat level
   void drawPot(){
     tint(fg);
     image(pot,x,y,w,h-50);
@@ -327,11 +341,13 @@ class Pot {
     line(x,y+h-10,x+w,y+h-10);
   }
   
+  // Set what level of heat (0-3) for heat display under pot
   void setHeat(int heatLevel){
     heat=heatLevel;
   }
 }
 
+// Displays an auto scaling graph of temperature over time
 class Graph {
   color fg, bg, a;
   int x, y, w, h;
@@ -352,18 +368,22 @@ class Graph {
 
   // Draw graph backdrop
   void setupGraph() {
+    // Draw background of graph
     noStroke();
     fill(bg);
     rect(x, y, w, h);
     fill(fg);
+    // Draw x-axis label
     textAlign(CENTER, CENTER);
     textSize(12);
     text("Time (s)", x+(w/2), y+h-12);
+    // Draw y-axis label
     pushMatrix();
     translate(x+6, y+h/2);
     rotate(radians(-90));
     text("Temp (°C)", 0, 0);
     popMatrix();
+    // Draw cordinate axis
     stroke(fg);
     line(x+48, y+h-48, x+48, y+12);
     line(x+48, y+h-48, x+w-12, y+h-48);
@@ -406,6 +426,7 @@ class Graph {
       float graphHeight=h-48-12;
       float lastxloc=-1;
       float lastyloc=-1;
+      // For each point, draw in right location
       for(int i=0; i<times.size(); i++){
         float xloc=x+48+(times.get(i)-minTime)*graphWidth/(maxTime-minTime);
         float yloc=y+h-48-(temps.get(i)-minTemp)*graphHeight/(maxTemp-minTemp);
@@ -419,7 +440,7 @@ class Graph {
       }
       
       // Plot tick marks
-      int ticks=5;
+      int ticks=5; // Number of ticks to generate total (for each axis)
       stroke(fg);
       fill(fg);
       textSize(12);
