@@ -1,5 +1,3 @@
-#include <EEPROM.h>
-
 // Pin to read thermistor from
 #define THERMISTOR_PIN A0
 // Resistance of thermistor at nominal temp
@@ -17,6 +15,7 @@
 #define RIGHT_US 2400 // Pulse time in us for all the way CW
 #define PERIOD 20000 // Period between leading edge of each pulse
 
+// Stepper motor setup
 #define PINK 10
 #define ORANGE 9
 #define BLUE 12
@@ -24,18 +23,18 @@
 #define CCW_BUTTON 2
 #define CW_BUTTON 3
 
-int setPoint = 0;
+// Global temperature setpoint value
+int setPoint = 0; //degC
 
 // PID bootstrap
-float lastError,output;
+float lastError,output,integral;
 long lastTime;
-float integral = 0;
 
 // PID constants
-float P = 20;
-float I = 0.001;
-float D = 0;
-float F = .12;
+float P = 20; // Found from testing
+float I = 0.001; // A little I just in case
+float D = 0;  // Didn't find that I needed D
+float F = .12; // constant based on setpoint (F*setPoint). A little heat is necessary to hold steady state temperature since it bleeds into environment.
 
 // Save stepper position
 int currentSteps = 0;
@@ -105,25 +104,35 @@ void loop() {
   while(millis()-startTime<10);
 }
 
+// Run and update PID loop
 void updatePID(){
   long startTime=millis();
   float error = setPoint-getTemp(1);
   float derivative = (error-lastError)/(startTime-lastTime);
+  
+  // Ensure integral is taking a huge area that it may never recover from
   if(startTime-lastTime<1000){
     integral+=error*(startTime-lastTime)/1000.0;
   }
+
+  // Calculate PID
   output = P*error+I*integral+D*derivative+F*setPoint;
+
+  // Ensure don't go out of range of stove
   if(output<0){
     output=0;
   } else if (output>270){
     output=270;
   }
+
+  // Write output
   setStepperAngle(output);
   lastTime=startTime;
 }
 
 // Returns temperature in C from thermistor
 // parameter numberOfSamples is how many samples to average for measurement
+// Modified from https://learn.adafruit.com/thermistor/using-a-thermistor
 float getTemp(int numberOfSamples){
   int samples[numberOfSamples];
   float average;
@@ -148,40 +157,33 @@ float getTemp(int numberOfSamples){
   // Convert reading to resistance
   average = average*5.0/1023.0; // Voltage
   average = (5.0-average)*SERIES_RESISTOR/average; // ohms (based on voltage divider equation solved for R)
-//  Serial.print("Resistance "); 
-//  Serial.println(average);
 
   // Get temperature using thermistor equation
   // 1/T = 1/T_nominal+(1/beta)*ln(R/R_nominal)
   average = 1.0/(1.0/(float)TEMPERATURE_NOMINAL+(1.0/(float)BETA)*log(average/(float)THERMISTOR_NOMINAL)); //K
   average -=273.15;// Celsius
-//  Serial.print("Temperature ");
-//  Serial.print(average);
-//  Serial.println("C");
-  return average-2.0;
+  return average-2.0; // Found off by ~2C consistently
 }
 
+// Set stepper motor based on angle
 void setStepperAngle(int angle){
   // 2*p*N_poles*GR=2*4*2*64=1024 steps/rev
   int steps = (map(angle,0,360,0,1024)*75)/12;
   setStepperSteps(steps);
 }
 
+// Set stepper motor based on total steps from starting position
+// Will only move towards target, does not wait until move is complete
+// Must be run every loop to actually get to target
 void setStepperSteps(int steps){
+  // Since incrementing by 2 steps at a time, allow for error of 1 so motor doesn't bounce back and forth
   if(steps-1>currentSteps){
-//    while(steps-1>currentSteps){
       twoStepsCW();
       currentSteps+=2;
-//    }
-//    EEPROM.write(0,currentSteps);
   } else if (steps+1<currentSteps){
-//    while(steps+1<currentSteps){
       twoStepsCCW();
       currentSteps-=2;
-//    }
-//    EEPROM.write(0,currentSteps);
   }
-  
 }
 
 // Go two steps CCW on stepper motor

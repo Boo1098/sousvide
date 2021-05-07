@@ -21,7 +21,7 @@ void setup() {
 
   // Create drawn objects
   graph=new Graph(50, 50, 750, 350, background, foreground, accent);
-  pot=new Pot(1200-350,50,450,300,background,foreground, accent);
+  pot=new Pot(1200-350,50,275,300,background,foreground, accent);
   timer=new Timer(175,450,500,132,background,foreground,accent);
   dial=new Dial(875,375,200,200,background,foreground,accent);
   
@@ -44,12 +44,14 @@ void draw () {
         float a0 = float(xyzaRaw[0]);
         float a1 = float(xyzaRaw[1]);
         float a2 = float(xyzaRaw[2]);
+        // Needed to make sure there's not garbage data (myPort.clear() doesn't seem to work)
         if(a0<5||flag){
           graph.addPoint(a0,a1);
           flag = true;
         }
         pot.setHeat((int)a2*4/270);
       } else {
+        // Print debug data
         println(inString);
       }  
     }
@@ -244,7 +246,6 @@ class Timer{
   
   // Ran every time a mouse is clicked. Used to update buttons
   void mouse(int mx, int my){
-    println(mx+" "+my);
     // Check if timer itself is pressed
     if(mx>x && mx<x+w && my>y+20 && my<y+h-20){
       if(!started)
@@ -311,11 +312,11 @@ class Pot {
     tint(fg);
     image(pot,x,y,w,h-50);
     stroke(heat>=3?accent:fg);
-    line(x,y+h-40,x+w/1.7,y+h-40);
+    line(x,y+h-40,x+w,y+h-40);
     stroke(heat>=2?accent:fg);
-    line(x,y+h-25,x+w/1.7,y+h-25);
+    line(x,y+h-25,x+w,y+h-25);
     stroke(heat>=1?accent:fg);
-    line(x,y+h-10,x+w/1.7,y+h-10);
+    line(x,y+h-10,x+w,y+h-10);
   }
   
   void setHeat(int heatLevel){
@@ -365,7 +366,7 @@ class Graph {
     // Add new value to array
     times.add(time);
     temps.add(temp);
-    // Update plot
+    // Remove data once it gets to large
     if(times.size()>10000){
       times.remove(0);
       temps.remove(0);
@@ -373,6 +374,7 @@ class Graph {
     
   }
 
+  // Draw points on to graph
   void drawPoints() {
     // Don't draw until at least 2 data points exist
     if (times!=null && times.size()>=2) {
@@ -422,6 +424,7 @@ class Graph {
     }
   }
 
+  // Redraws entire graph
   void updateGraph() {
     setupGraph();
     drawPoints();
