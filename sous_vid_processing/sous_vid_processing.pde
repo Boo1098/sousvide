@@ -5,7 +5,7 @@ Serial myPort; // define a serial port object to monitor
 
 // Global colors
 color background=color(0,0,0);
-color foreground=color(255,255,0);
+color foreground=color(255,255,255);
 color accent=color(255,0,255);
 
 // Displayed objects
@@ -20,10 +20,10 @@ void setup() {
   
 
   // Create drawn objects
-  graph=new Graph(50, 50, 750, 250, background, foreground, accent);
-  pot=new Pot(1200-350,50,300,200,background,foreground, accent);
-  timer=new Timer(350,450,500,132,background,foreground,accent);
-  dial=new Dial(900,350,200,200,background,foreground,accent);
+  graph=new Graph(50, 50, 750, 350, background, foreground, accent);
+  pot=new Pot(1200-350,50,450,300,background,foreground, accent);
+  timer=new Timer(175,450,500,132,background,foreground,accent);
+  dial=new Dial(875,375,200,200,background,foreground,accent);
   
   // Initialize timer to convienient number
   timer.setTimer(1,30,0);
@@ -90,18 +90,21 @@ class Dial{
     h=ySize;
     bg=background;
     fg=foreground;
+    a=accent;
     outsideDial=loadImage("dialOutside.png");
     insideDial=loadImage("dialInside.png");
     temp=25;
+    theta=radians(240);
     drawDial();
   }
   
   void drawDial(){
     imageMode(CENTER);
-    fill(foreground);
+    fill(fg);
+    tint(fg);
     image(outsideDial,x+w/2,y+h/2,w,h);
-    stroke(foreground);
-    fill(background);
+    stroke(fg);
+    fill(bg);
     if(mousePressed){
       if(mouseX>x&&mouseX<x+w&&mouseY>y&&mouseY<y+h){
         // Generate angle dial needs to point in
@@ -122,12 +125,13 @@ class Dial{
     pushMatrix();
     translate(x+w/2,y+h/2);
     rotate(theta);
+    tint(a);
     image(insideDial,0,0,w,h);
     popMatrix();
     imageMode(CORNER);
     textAlign(CENTER);
     textSize(25);
-    fill(foreground);
+    fill(fg);
     text((int)temp+"°C",x+w/2,y+h+25);
     textSize(12);
   }
@@ -290,6 +294,7 @@ class Pot {
   }
   
   void drawPot(){
+    tint(fg);
     image(pot,x,y,w,h-50);
     stroke(heat>=3?accent:fg);
     line(x,y+h-40,x+w/1.7,y+h-40);
